@@ -85,8 +85,8 @@ const userInitials = computed(() => { const n = 'You'; return n.split(/\s+/).map
 </template>
 
 <style scoped>
-.sidebar { width: var(--sidebar-w); min-width: var(--sidebar-w); background: var(--bg-sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; transition: transform 0.25s ease, margin 0.25s ease; z-index: 40; }
-.sidebar.collapsed { margin-left: calc(-1 * var(--sidebar-w)); }
+.sidebar { width: var(--sidebar-w); min-width: var(--sidebar-w); background: var(--bg-sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 40; }
+.sidebar.collapsed { display: none; }
 .sidebar-header { padding: 14px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; }
 .btn-new { flex: 1; background: transparent; border: 1px solid var(--border); color: var(--text); border-radius: 10px; padding: 10px 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background 0.15s, border-color 0.15s; }
 .btn-new:hover { background: var(--bg-hover); border-color: var(--accent); }

@@ -48,6 +48,6 @@ html, body {
   width: 100%;
   max-width: 100%;
 }
-#app { height: 100vh; width: 100vw; display: flex; overflow: hidden; }
+#app { height: 100vh; width: 100%; display: flex; overflow: hidden; }
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }

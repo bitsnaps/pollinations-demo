@@ -22,6 +22,6 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.app-shell { display: flex; height: 100vh; }
+.app-shell { display: flex; height: 100vh; width: 100%; overflow: hidden; }
 .main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; background: var(--bg-app); }
 </style>
