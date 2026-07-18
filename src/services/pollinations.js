@@ -3,10 +3,13 @@ import OpenAI from 'openai'
 const GEN_BASE = 'https://gen.pollinations.ai'
 const OPENAI_BASE = `${GEN_BASE}/v1`
 
+const CLIENT_KEY = import.meta.env.VITE_POLLINATIONS_API_KEY || import.meta.env.POLLINATIONS_API_KEY || ''
+const CLIENT_BASE = import.meta.env.VITE_OPENAI_BASE_URL || import.meta.env.OPENAI_BASE_URL || OPENAI_BASE
+
 export function createClient(apiKey) {
   return new OpenAI({
-    apiKey: apiKey || 'anonymous',
-    baseURL: import.meta.env.VITE_OPENAI_BASE_URL || OPENAI_BASE,
+    apiKey: apiKey || CLIENT_KEY || 'anonymous',
+    baseURL: CLIENT_BASE,
     dangerouslyAllowBrowser: true,
   })
 }
