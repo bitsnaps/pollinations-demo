@@ -17,6 +17,10 @@ const mode = ref('text')
 const messages = computed(() => convs.messages)
 const canSend = computed(() => input.value.trim().length > 0)
 
+function selectModel(id) {
+  if (convs.active) convs.active.model = id
+}
+
 async function scrollToBottom(force = false) {
   await nextTick()
   const el = scrollRef.value
@@ -116,7 +120,9 @@ onMounted(async () => { if (!convs.active) convs.newConversation('openai'); if (
           <textarea ref="inputEl" v-model="input" placeholder="Message Pollinations…" rows="1" @keydown="onKeydown" @input="autoResize" />
           <div class="input-toolbar">
             <div class="toolbar-left">
-              <span class="badge"><i class="fa-solid fa-sparkles"></i> {{ labelFor(convs.active?.model) || 'openai' }}</span>
+              <b-select size="is-small" :value="convs.active?.model" @input="selectModel" placeholder="Model" class="model-select">
+                <option v-for="m in models" :key="m.id" :value="m.id">{{ labelFor(m.id) }}</option>
+              </b-select>
             </div>
             <div class="toolbar-right">
               <button class="send-btn" :disabled="!canSend || streaming" @click="onSend" title="Send"><i class="fa-solid fa-arrow-up"></i></button>
@@ -177,6 +183,9 @@ onMounted(async () => { if (!convs.active) convs.newConversation('openai'); if (
 .input-box textarea::placeholder { color: var(--text-muted); }
 .input-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .toolbar-left, .toolbar-right { display: flex; align-items: center; gap: 4px; }
+.model-select :deep(.select) { margin-bottom: 0; }
+.model-select :deep(.select select) { background: transparent; border: none; color: var(--accent); font-size: 11px; font-weight: 600; padding: 2px 4px; cursor: pointer; height: auto; }
+.model-select :deep(.select::after) { border-color: var(--accent); }
 .badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; background: var(--accent-soft); color: var(--accent); }
 .send-btn { width: 36px; height: 36px; border-radius: 10px; border: none; background: var(--accent); color: white; cursor: pointer; display: grid; place-items: center; transition: background 0.15s, opacity 0.15s; }
 .send-btn:hover { background: var(--accent-hover); }
