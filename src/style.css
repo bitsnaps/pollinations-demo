@@ -1,0 +1,49 @@
+:root {
+  --bg-app: #0f0f12;
+  --bg-sidebar: #141418;
+  --bg-panel: #1a1a20;
+  --bg-input: #22222a;
+  --bg-hover: #26262f;
+  --bg-user: #2a2a35;
+  --bg-assistant: transparent;
+  --border: #2e2e38;
+  --text: #ececf1;
+  --text-muted: #9b9ba7;
+  --accent: #10a37f;
+  --accent-hover: #0e8c6d;
+  --accent-soft: rgba(16, 163, 127, 0.15);
+  --danger: #ef4444;
+  --radius: 14px;
+  --sidebar-w: 280px;
+  --shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+
+[data-theme="light"] {
+  --bg-app: #f7f7f8;
+  --bg-sidebar: #ffffff;
+  --bg-panel: #ffffff;
+  --bg-input: #f4f4f5;
+  --bg-hover: #efeff1;
+  --bg-user: #e8e8ed;
+  --bg-assistant: transparent;
+  --border: #e4e4e9;
+  --text: #1a1a1f;
+  --text-muted: #6b6b76;
+  --accent: #10a37f;
+  --accent-hover: #0e8c6d;
+  --accent-soft: rgba(16, 163, 127, 0.12);
+  --shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+}
+
+* { box-sizing: border-box; }
+html, body {
+  height: 100%;
+  margin: 0;
+  background: var(--bg-app);
+  color: var(--text);
+  font-family: "Söhne", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  overflow: hidden;
+}
+#app { height: 100vh; display: flex; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }

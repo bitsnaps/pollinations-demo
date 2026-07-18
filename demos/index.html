@@ -1,0 +1,1905 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ModaChat — Multimodal AI Assistant</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <style>
+    :root {
+      --bg-app: #0f0f12;
+      --bg-sidebar: #141418;
+      --bg-panel: #1a1a20;
+      --bg-input: #22222a;
+      --bg-hover: #26262f;
+      --bg-user: #2a2a35;
+      --bg-assistant: transparent;
+      --border: #2e2e38;
+      --text: #ececf1;
+      --text-muted: #9b9ba7;
+      --accent: #10a37f;
+      --accent-hover: #0e8c6d;
+      --accent-soft: rgba(16, 163, 127, 0.15);
+      --danger: #ef4444;
+      --radius: 14px;
+      --sidebar-w: 280px;
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+    }
+
+    [data-theme="light"] {
+      --bg-app: #f7f7f8;
+      --bg-sidebar: #ffffff;
+      --bg-panel: #ffffff;
+      --bg-input: #f4f4f5;
+      --bg-hover: #efeff1;
+      --bg-user: #e8e8ed;
+      --bg-assistant: transparent;
+      --border: #e4e4e9;
+      --text: #1a1a1f;
+      --text-muted: #6b6b76;
+      --accent: #10a37f;
+      --accent-hover: #0e8c6d;
+      --accent-soft: rgba(16, 163, 127, 0.12);
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: var(--bg-app);
+      color: var(--text);
+      font-family: "Söhne", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      overflow: hidden;
+    }
+
+    #app { height: 100vh; display: flex; }
+
+    /* Sidebar */
+    .sidebar {
+      width: var(--sidebar-w);
+      min-width: var(--sidebar-w);
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.25s ease, margin 0.25s ease;
+      z-index: 40;
+    }
+    .sidebar.collapsed {
+      margin-left: calc(-1 * var(--sidebar-w));
+    }
+    .sidebar-header {
+      padding: 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 8px;
+    }
+    .btn-new {
+      flex: 1;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .btn-new:hover { background: var(--bg-hover); border-color: var(--accent); }
+    .icon-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      transition: background 0.15s;
+    }
+    .icon-btn:hover { background: var(--bg-hover); }
+
+    .chat-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+    }
+    .chat-list::-webkit-scrollbar { width: 6px; }
+    .chat-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 8px; }
+
+    .section-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      padding: 10px 10px 6px;
+      font-weight: 700;
+    }
+    .chat-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      color: var(--text);
+      transition: background 0.15s;
+      position: relative;
+    }
+    .chat-item:hover { background: var(--bg-hover); }
+    .chat-item.active { background: var(--bg-hover); }
+    .chat-item .title-text {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-size: 14px;
+    }
+    .chat-item .del-btn {
+      opacity: 0;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px;
+    }
+    .chat-item:hover .del-btn { opacity: 1; }
+    .chat-item .del-btn:hover { color: var(--danger); }
+
+    .sidebar-footer {
+      border-top: 1px solid var(--border);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .user-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px;
+      border-radius: 10px;
+    }
+    .avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #10a37f, #3b82f6);
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      font-size: 13px;
+      color: white;
+      flex-shrink: 0;
+    }
+    .avatar.assistant {
+      background: linear-gradient(135deg, #10a37f, #14b8a6);
+    }
+
+    /* Main */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      position: relative;
+      background: var(--bg-app);
+    }
+    .topbar {
+      height: 56px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      background: color-mix(in srgb, var(--bg-app) 85%, transparent);
+      backdrop-filter: blur(10px);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+    .model-select {
+      appearance: none;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 8px 36px 8px 12px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%239b9ba7' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+    }
+    .topbar-actions { display: flex; gap: 8px; align-items: center; }
+
+    /* Messages */
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      scroll-behavior: smooth;
+    }
+    .messages::-webkit-scrollbar { width: 8px; }
+    .messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 8px; }
+
+    .empty-state {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px;
+      text-align: center;
+      gap: 12px;
+    }
+    .logo-mark {
+      width: 64px;
+      height: 64px;
+      border-radius: 18px;
+      background: linear-gradient(145deg, #10a37f, #0ea5e9);
+      display: grid;
+      place-items: center;
+      font-size: 28px;
+      color: white;
+      box-shadow: 0 12px 40px rgba(16, 163, 127, 0.35);
+      margin-bottom: 8px;
+    }
+    .empty-state h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin: 0;
+    }
+    .empty-state p {
+      color: var(--text-muted);
+      max-width: 420px;
+      margin: 0 0 12px;
+    }
+    .suggestions {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+      width: min(720px, 100%);
+      margin-top: 8px;
+    }
+    .suggestion {
+      text-align: left;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      cursor: pointer;
+      color: var(--text);
+      transition: border-color 0.15s, transform 0.15s, background 0.15s;
+    }
+    .suggestion:hover {
+      border-color: var(--accent);
+      background: var(--bg-hover);
+      transform: translateY(-2px);
+    }
+    .suggestion .s-title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+    .suggestion .s-desc { font-size: 12px; color: var(--text-muted); }
+
+    .msg-row {
+      display: flex;
+      justify-content: center;
+      padding: 20px 16px;
+      border-bottom: 1px solid transparent;
+    }
+    .msg-row.user { background: transparent; }
+    .msg-row.assistant { background: color-mix(in srgb, var(--bg-panel) 40%, transparent); }
+    .msg-inner {
+      width: min(820px, 100%);
+      display: flex;
+      gap: 14px;
+    }
+    .msg-body { flex: 1; min-width: 0; }
+    .msg-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .msg-role {
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .msg-time {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .msg-content {
+      font-size: 15px;
+      line-height: 1.65;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .msg-content p { margin: 0 0 0.75em; }
+    .msg-content p:last-child { margin-bottom: 0; }
+    .msg-content code.inline {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1px 6px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.9em;
+    }
+    .code-block {
+      background: #0d1117;
+      color: #e6edf3;
+      border-radius: 12px;
+      overflow: hidden;
+      margin: 10px 0;
+      border: 1px solid #30363d;
+    }
+    [data-theme="light"] .code-block {
+      background: #1e1e24;
+    }
+    .code-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: #161b22;
+      color: #8b949e;
+      font-size: 12px;
+    }
+    .code-header button {
+      background: transparent;
+      border: none;
+      color: #8b949e;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .code-header button:hover { color: #fff; }
+    .code-block pre {
+      margin: 0;
+      padding: 14px;
+      overflow-x: auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .media-card {
+      margin-top: 10px;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: var(--bg-panel);
+      max-width: 520px;
+    }
+    .media-card img,
+    .media-card video {
+      display: block;
+      width: 100%;
+      max-height: 420px;
+      object-fit: cover;
+      background: #000;
+    }
+    .media-card audio {
+      width: 100%;
+      display: block;
+      padding: 12px;
+    }
+    .media-meta {
+      padding: 10px 12px;
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+    .badge.image { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+    .badge.audio { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
+    .badge.video { background: rgba(244, 63, 94, 0.15); color: #fb7185; }
+    .badge.file { background: rgba(234, 179, 8, 0.15); color: #fbbf24; }
+
+    .msg-actions {
+      display: flex;
+      gap: 4px;
+      margin-top: 10px;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    .msg-row:hover .msg-actions { opacity: 1; }
+    .act-btn {
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 6px 8px;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+    .act-btn:hover { background: var(--bg-hover); color: var(--text); }
+
+    /* Typing */
+    .typing {
+      display: inline-flex;
+      gap: 5px;
+      padding: 8px 0;
+    }
+    .typing span {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      animation: bounce 1.2s infinite ease-in-out;
+    }
+    .typing span:nth-child(2) { animation-delay: 0.15s; }
+    .typing span:nth-child(3) { animation-delay: 0.3s; }
+    @keyframes bounce {
+      0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+      40% { transform: translateY(-6px); opacity: 1; }
+    }
+
+    /* Composer */
+    .composer-wrap {
+      padding: 12px 16px 18px;
+      background: linear-gradient(to top, var(--bg-app) 70%, transparent);
+    }
+    .composer {
+      width: min(820px, 100%);
+      margin: 0 auto;
+    }
+    .attachments-preview {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .att-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 6px 10px;
+      font-size: 12px;
+      max-width: 220px;
+    }
+    .att-chip img {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      object-fit: cover;
+    }
+    .att-chip .att-info {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .att-chip button {
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+    .att-chip button:hover { color: var(--danger); }
+
+    .input-box {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 10px 12px;
+      box-shadow: var(--shadow);
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .input-box:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft), var(--shadow);
+    }
+    .input-box textarea {
+      width: 100%;
+      border: none;
+      outline: none;
+      resize: none;
+      background: transparent;
+      color: var(--text);
+      font-size: 15px;
+      line-height: 1.5;
+      max-height: 180px;
+      min-height: 28px;
+      font-family: inherit;
+      padding: 4px 4px 8px;
+    }
+    .input-box textarea::placeholder { color: var(--text-muted); }
+    .input-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .toolbar-left, .toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .tool-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      transition: background 0.15s, color 0.15s;
+      position: relative;
+    }
+    .tool-btn:hover { background: var(--bg-hover); color: var(--text); }
+    .tool-btn.active {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+    .send-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      border: none;
+      background: var(--accent);
+      color: white;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      transition: background 0.15s, opacity 0.15s;
+    }
+    .send-btn:hover { background: var(--accent-hover); }
+    .send-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .mode-pills {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+    .mode-pill {
+      border: 1px solid var(--border);
+      background: var(--bg-panel);
+      color: var(--text-muted);
+      border-radius: 999px;
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .mode-pill:hover { color: var(--text); border-color: var(--text-muted); }
+    .mode-pill.active {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .hint {
+      text-align: center;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 10px;
+    }
+
+    /* Modals */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 16px;
+      backdrop-filter: blur(4px);
+    }
+    .modal-card-custom {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      width: min(480px, 100%);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .modal-card-custom header,
+    .modal-card-custom footer {
+      padding: 16px 20px;
+      border-color: var(--border);
+    }
+    .modal-card-custom header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .modal-card-custom header h3 {
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+    .modal-card-custom .body { padding: 20px; }
+    .modal-card-custom footer {
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+    .field-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--text-muted);
+    }
+    .field-input, .field-select {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      padding: 10px 12px;
+      font-size: 14px;
+      margin-bottom: 14px;
+    }
+    .field-input:focus, .field-select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .toggle-row:last-child { border-bottom: none; }
+    .switch {
+      position: relative;
+      width: 44px;
+      height: 24px;
+    }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute;
+      inset: 0;
+      background: var(--bg-hover);
+      border-radius: 999px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .slider:before {
+      content: "";
+      position: absolute;
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background: white;
+      border-radius: 50%;
+      transition: 0.2s;
+    }
+    .switch input:checked + .slider { background: var(--accent); }
+    .switch input:checked + .slider:before { transform: translateX(20px); }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 9px 16px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 9px 16px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-ghost:hover { background: var(--bg-hover); }
+
+    /* Lightbox */
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.88);
+      z-index: 120;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .lightbox img, .lightbox video {
+      max-width: 95vw;
+      max-height: 90vh;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    .lightbox-close {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(255,255,255,0.12);
+      color: white;
+      cursor: pointer;
+      font-size: 18px;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 18px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: var(--shadow);
+      z-index: 200;
+      animation: fadeUp 0.25s ease;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translate(-50%, 10px); }
+      to { opacity: 1; transform: translate(-50%, 0); }
+    }
+
+    /* Mobile */
+    .mobile-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 35;
+    }
+    @media (max-width: 768px) {
+      .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        transform: translateX(-100%);
+        margin-left: 0 !important;
+      }
+      .sidebar.open { transform: translateX(0); }
+      .mobile-overlay.show { display: block; }
+      .suggestions { grid-template-columns: 1fr; }
+    }
+
+    .menu-dropdown {
+      position: absolute;
+      bottom: 48px;
+      left: 0;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 6px;
+      min-width: 180px;
+      box-shadow: var(--shadow);
+      z-index: 30;
+    }
+    .menu-dropdown button {
+      width: 100%;
+      text-align: left;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .menu-dropdown button:hover { background: var(--bg-hover); }
+
+    .stop-btn {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 auto 10px;
+    }
+    .stop-btn:hover { background: var(--bg-hover); }
+    .center-stop { display: flex; justify-content: center; }
+
+    .file-drop-active .input-box {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="mobile-overlay" :class="{ show: sidebarOpen }" @click="sidebarOpen = false"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" :class="{ collapsed: !sidebarOpen && !isMobile, open: sidebarOpen }">
+      <div class="sidebar-header">
+        <button class="btn-new" @click="newChat">
+          <i class="fa-solid fa-plus"></i> New chat
+        </button>
+        <button class="icon-btn" @click="sidebarOpen = false" title="Close sidebar">
+          <i class="fa-solid fa-sidebar"></i>
+        </button>
+      </div>
+
+      <div class="chat-list">
+        <div v-if="todayChats.length">
+          <div class="section-label">Today</div>
+          <div
+            v-for="c in todayChats"
+            :key="c.id"
+            class="chat-item"
+            :class="{ active: c.id === activeChatId }"
+            @click="selectChat(c.id)"
+          >
+            <i class="fa-regular fa-message" style="opacity:0.6;font-size:13px"></i>
+            <span class="title-text">{{ c.title }}</span>
+            <button class="del-btn" @click.stop="deleteChat(c.id)" title="Delete">
+              <i class="fa-regular fa-trash-can"></i>
+            </button>
+          </div>
+        </div>
+        <div v-if="olderChats.length">
+          <div class="section-label">Previous</div>
+          <div
+            v-for="c in olderChats"
+            :key="c.id"
+            class="chat-item"
+            :class="{ active: c.id === activeChatId }"
+            @click="selectChat(c.id)"
+          >
+            <i class="fa-regular fa-message" style="opacity:0.6;font-size:13px"></i>
+            <span class="title-text">{{ c.title }}</span>
+            <button class="del-btn" @click.stop="deleteChat(c.id)" title="Delete">
+              <i class="fa-regular fa-trash-can"></i>
+            </button>
+          </div>
+        </div>
+        <div v-if="!chats.length" style="padding:20px;color:var(--text-muted);font-size:13px;text-align:center">
+          No conversations yet
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <button class="chat-item" @click="showSettings = true" style="width:100%">
+          <i class="fa-solid fa-gear"></i>
+          <span class="title-text">Settings</span>
+        </button>
+        <div class="user-row">
+          <div class="avatar">{{ userInitials }}</div>
+          <div style="min-width:0;flex:1">
+            <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ settings.displayName }}</div>
+            <div style="font-size:11px;color:var(--text-muted)">Free plan</div>
+          </div>
+          <button class="icon-btn" style="width:34px;height:34px;border:none" @click="toggleTheme" :title="theme === 'dark' ? 'Light mode' : 'Dark mode'">
+            <i :class="theme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon'"></i>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <div class="topbar">
+        <div style="display:flex;align-items:center;gap:10px">
+          <button class="icon-btn" @click="sidebarOpen = !sidebarOpen" title="Toggle sidebar">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <select class="model-select" v-model="settings.model">
+            <option value="moda-4o">ModaChat 4o</option>
+            <option value="moda-4o-mini">ModaChat 4o mini</option>
+            <option value="moda-vision">ModaChat Vision</option>
+            <option value="moda-creative">ModaChat Creative</option>
+          </select>
+        </div>
+        <div class="topbar-actions">
+          <span class="badge" style="display:none" :style="{display: isStreaming ? 'inline-flex' : 'none'}">
+            <i class="fa-solid fa-circle-notch fa-spin"></i> Generating
+          </span>
+          <button class="icon-btn" @click="exportChat" title="Export chat" :disabled="!activeMessages.length">
+            <i class="fa-solid fa-download"></i>
+          </button>
+          <button class="icon-btn" @click="clearActiveChat" title="Clear messages" :disabled="!activeMessages.length">
+            <i class="fa-solid fa-broom"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="messages" ref="messagesEl" @scroll="onScroll">
+        <!-- Empty state -->
+        <div v-if="!activeMessages.length && !isStreaming" class="empty-state">
+          <div class="logo-mark"><i class="fa-solid fa-sparkles"></i></div>
+          <h1>How can I help you today?</h1>
+          <p>Multimodal AI assistant for text, images, audio, video, and files — all in one place.</p>
+          <div class="suggestions">
+            <button class="suggestion" v-for="s in suggestions" :key="s.title" @click="useSuggestion(s)">
+              <div class="s-title"><i :class="s.icon" style="margin-right:6px;opacity:0.8"></i>{{ s.title }}</div>
+              <div class="s-desc">{{ s.desc }}</div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Messages -->
+        <div
+          v-for="(msg, idx) in activeMessages"
+          :key="msg.id"
+          class="msg-row"
+          :class="msg.role"
+        >
+          <div class="msg-inner">
+            <div class="avatar" :class="{ assistant: msg.role === 'assistant' }">
+              <template v-if="msg.role === 'user'">{{ userInitials }}</template>
+              <template v-else><i class="fa-solid fa-sparkles" style="font-size:14px"></i></template>
+            </div>
+            <div class="msg-body">
+              <div class="msg-meta">
+                <span class="msg-role">{{ msg.role === 'user' ? settings.displayName : 'ModaChat' }}</span>
+                <span class="msg-time">{{ formatTime(msg.createdAt) }}</span>
+                <span v-if="msg.mode" class="badge" :class="msg.mode">{{ msg.mode }}</span>
+              </div>
+
+              <!-- Text content with simple markdown -->
+              <div class="msg-content" v-if="msg.text" v-html="renderMarkdown(msg.text)"></div>
+
+              <!-- Attachments / generated media -->
+              <div v-for="(m, mi) in msg.media" :key="mi" class="media-card">
+                <img
+                  v-if="m.type === 'image'"
+                  :src="m.url"
+                  :alt="m.name || 'Image'"
+                  @click="openLightbox(m)"
+                  style="cursor:zoom-in"
+                />
+                <audio v-else-if="m.type === 'audio'" :src="m.url" controls></audio>
+                <video
+                  v-else-if="m.type === 'video'"
+                  :src="m.url"
+                  controls
+                  @click.stop
+                ></video>
+                <div v-else class="media-meta" style="padding:16px">
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <i class="fa-solid fa-file" style="font-size:20px;color:var(--text-muted)"></i>
+                    <div>
+                      <div style="font-weight:600;color:var(--text)">{{ m.name || 'File' }}</div>
+                      <div>{{ m.mime || 'application/octet-stream' }}</div>
+                    </div>
+                  </div>
+                  <a :href="m.url" :download="m.name" class="act-btn" style="opacity:1"><i class="fa-solid fa-download"></i></a>
+                </div>
+                <div class="media-meta" v-if="m.type !== 'file' || m.caption">
+                  <span class="badge" :class="m.type">
+                    <i :class="mediaIcon(m.type)"></i> {{ m.type }}
+                  </span>
+                  <span>{{ m.name || m.caption || '' }}</span>
+                </div>
+              </div>
+
+              <!-- Streaming indicator on last assistant msg -->
+              <div v-if="isStreaming && idx === activeMessages.length - 1 && msg.role === 'assistant' && !msg.text" class="typing">
+                <span></span><span></span><span></span>
+              </div>
+
+              <div class="msg-actions" v-if="!(isStreaming && idx === activeMessages.length - 1)">
+                <button class="act-btn" @click="copyMessage(msg)" title="Copy"><i class="fa-regular fa-copy"></i></button>
+                <button class="act-btn" v-if="msg.role === 'assistant'" @click="regenerate(idx)" title="Regenerate"><i class="fa-solid fa-rotate"></i></button>
+                <button class="act-btn" @click="speakMessage(msg)" title="Read aloud" v-if="msg.text">
+                  <i class="fa-solid fa-volume-high"></i>
+                </button>
+                <button class="act-btn" v-if="msg.role === 'user'" @click="editAndResend(msg, idx)" title="Edit"><i class="fa-regular fa-pen-to-square"></i></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Composer -->
+      <div class="composer-wrap" :class="{ 'file-drop-active': isDragging }"
+           @dragover.prevent="isDragging = true"
+           @dragleave.prevent="isDragging = false"
+           @drop.prevent="onDrop">
+        <div class="composer">
+          <div class="center-stop" v-if="isStreaming">
+            <button class="stop-btn" @click="stopStreaming">
+              <i class="fa-solid fa-stop"></i> Stop generating
+            </button>
+          </div>
+
+          <div class="mode-pills">
+            <button
+              v-for="m in modes"
+              :key="m.id"
+              class="mode-pill"
+              :class="{ active: responseMode === m.id }"
+              @click="responseMode = m.id"
+              :title="m.desc"
+            >
+              <i :class="m.icon" style="margin-right:5px"></i>{{ m.label }}
+            </button>
+          </div>
+
+          <div class="attachments-preview" v-if="pendingAttachments.length">
+            <div class="att-chip" v-for="(a, i) in pendingAttachments" :key="i">
+              <img v-if="a.type === 'image'" :src="a.url" alt="" />
+              <i v-else :class="mediaIcon(a.type)" style="font-size:18px;color:var(--text-muted)"></i>
+              <div class="att-info">
+                <div style="font-weight:600">{{ a.name }}</div>
+                <div style="color:var(--text-muted)">{{ a.type }}</div>
+              </div>
+              <button @click="removeAttachment(i)"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+          </div>
+
+          <div class="input-box">
+            <textarea
+              ref="inputEl"
+              v-model="input"
+              :placeholder="placeholder"
+              rows="1"
+              @keydown="onKeydown"
+              @input="autoResize"
+            ></textarea>
+            <div class="input-toolbar">
+              <div class="toolbar-left">
+                <button class="tool-btn" title="Attach files" @click="$refs.fileInput.click()">
+                  <i class="fa-solid fa-paperclip"></i>
+                </button>
+                <button class="tool-btn" title="Upload image" @click="$refs.imageInput.click()">
+                  <i class="fa-regular fa-image"></i>
+                </button>
+                <button class="tool-btn" title="Upload audio" @click="$refs.audioInput.click()">
+                  <i class="fa-solid fa-microphone"></i>
+                </button>
+                <button class="tool-btn" title="Upload video" @click="$refs.videoInput.click()">
+                  <i class="fa-solid fa-film"></i>
+                </button>
+                <button
+                  class="tool-btn"
+                  :class="{ active: isRecording }"
+                  :title="isRecording ? 'Stop recording' : 'Voice input'"
+                  @click="toggleRecording"
+                >
+                  <i :class="isRecording ? 'fa-solid fa-stop' : 'fa-solid fa-waveform-lines'"></i>
+                </button>
+                <input ref="fileInput" type="file" multiple hidden @change="onFileSelect($event, 'file')" />
+                <input ref="imageInput" type="file" accept="image/*" multiple hidden @change="onFileSelect($event, 'image')" />
+                <input ref="audioInput" type="file" accept="audio/*" multiple hidden @change="onFileSelect($event, 'audio')" />
+                <input ref="videoInput" type="file" accept="video/*" multiple hidden @change="onFileSelect($event, 'video')" />
+              </div>
+              <div class="toolbar-right">
+                <button
+                  class="send-btn"
+                  :disabled="!canSend || isStreaming"
+                  @click="sendMessage"
+                  title="Send"
+                >
+                  <i class="fa-solid fa-arrow-up"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="hint">ModaChat can make mistakes. Check important info. Demo uses simulated multimodal responses.</div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Settings modal -->
+    <div class="modal-overlay" v-if="showSettings" @click.self="showSettings = false">
+      <div class="modal-card-custom">
+        <header>
+          <h3>Settings</h3>
+          <button class="icon-btn" style="border:none;width:34px;height:34px" @click="showSettings = false">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </header>
+        <div class="body">
+          <label class="field-label">Display name</label>
+          <input class="field-input" v-model="settings.displayName" maxlength="40" />
+
+          <label class="field-label">Default model</label>
+          <select class="field-select" v-model="settings.model">
+            <option value="moda-4o">ModaChat 4o</option>
+            <option value="moda-4o-mini">ModaChat 4o mini</option>
+            <option value="moda-vision">ModaChat Vision</option>
+            <option value="moda-creative">ModaChat Creative</option>
+          </select>
+
+          <label class="field-label">System personality</label>
+          <select class="field-select" v-model="settings.personality">
+            <option value="helpful">Helpful & balanced</option>
+            <option value="concise">Concise</option>
+            <option value="creative">Creative</option>
+            <option value="technical">Technical expert</option>
+          </select>
+
+          <div class="toggle-row">
+            <div>
+              <div style="font-weight:600;font-size:14px">Enter to send</div>
+              <div style="font-size:12px;color:var(--text-muted)">Shift+Enter for new line</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" v-model="settings.enterToSend" />
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="toggle-row">
+            <div>
+              <div style="font-weight:600;font-size:14px">Stream responses</div>
+              <div style="font-size:12px;color:var(--text-muted)">Typewriter effect</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" v-model="settings.stream" />
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="toggle-row">
+            <div>
+              <div style="font-weight:600;font-size:14px">Dark theme</div>
+              <div style="font-size:12px;color:var(--text-muted)">Easier on the eyes</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" :checked="theme === 'dark'" @change="toggleTheme" />
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+        <footer>
+          <button class="btn-ghost" @click="resetSettings">Reset</button>
+          <button class="btn-primary" @click="saveSettings">Save</button>
+        </footer>
+      </div>
+    </div>
+
+    <!-- Lightbox -->
+    <div class="lightbox" v-if="lightbox" @click.self="lightbox = null">
+      <button class="lightbox-close" @click="lightbox = null"><i class="fa-solid fa-xmark"></i></button>
+      <img v-if="lightbox.type === 'image'" :src="lightbox.url" alt="" />
+      <video v-else-if="lightbox.type === 'video'" :src="lightbox.url" controls autoplay></video>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" v-if="toast">{{ toast }}</div>
+  </div>
+
+  <script>
+    const { createApp, ref, computed, watch, nextTick, onMounted, onBeforeUnmount } = Vue;
+
+    const STORAGE_KEY = 'modachat-v1';
+    const SAMPLE_IMAGES = [
+      'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
+      'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&q=80',
+      'https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=800&q=80',
+      'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=800&q=80',
+      'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&q=80'
+    ];
+    const SAMPLE_AUDIO = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
+    const SAMPLE_VIDEO = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
+
+    function uid() {
+      return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+    }
+
+    function startOfToday() {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      return d.getTime();
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function renderMarkdown(text) {
+      if (!text) return '';
+      let html = escapeHtml(text);
+
+      // fenced code blocks
+      html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, (_, lang, code) => {
+        const language = lang || 'code';
+        return `<div class="code-block"><div class="code-header"><span>${language}</span><button type="button" onclick="navigator.clipboard.writeText(this.closest('.code-block').querySelector('code').innerText).then(()=>{})"><i class="fa-regular fa-copy"></i> Copy</button></div><pre><code>${code.replace(/\n$/, '')}</code></pre></div>`;
+      });
+
+      // inline code
+      html = html.replace(/`([^`]+)`/g, '<code class="inline">$1</code>');
+
+      // bold / italic
+      html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+      html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+      // links
+      html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" style="color:var(--accent)">$1</a>');
+
+      // simple lists
+      html = html.replace(/^(?:- |\* )(.+)$/gm, '• $1');
+
+      // paragraphs
+      html = html.split(/\n{2,}/).map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
+
+      return html;
+    }
+
+    createApp({
+      setup() {
+        const defaultSettings = {
+          displayName: 'You',
+          model: 'moda-4o',
+          personality: 'helpful',
+          enterToSend: true,
+          stream: true
+        };
+
+        const theme = ref(localStorage.getItem('modachat-theme') || 'dark');
+        const settings = ref({ ...defaultSettings });
+        const chats = ref([]);
+        const activeChatId = ref(null);
+        const input = ref('');
+        const pendingAttachments = ref([]);
+        const responseMode = ref('auto');
+        const isStreaming = ref(false);
+        const showSettings = ref(false);
+        const sidebarOpen = ref(window.innerWidth > 768);
+        const isMobile = ref(window.innerWidth <= 768);
+        const toast = ref('');
+        const lightbox = ref(null);
+        const isDragging = ref(false);
+        const isRecording = ref(false);
+        const messagesEl = ref(null);
+        const inputEl = ref(null);
+        let streamTimer = null;
+        let toastTimer = null;
+        let recognition = null;
+        let stickToBottom = true;
+
+        const modes = [
+          { id: 'auto', label: 'Auto', icon: 'fa-solid fa-wand-magic-sparkles', desc: 'Pick best modality' },
+          { id: 'text', label: 'Text', icon: 'fa-solid fa-align-left', desc: 'Text only' },
+          { id: 'image', label: 'Image', icon: 'fa-regular fa-image', desc: 'Generate image' },
+          { id: 'audio', label: 'Audio', icon: 'fa-solid fa-music', desc: 'Generate audio' },
+          { id: 'video', label: 'Video', icon: 'fa-solid fa-video', desc: 'Generate video' },
+          { id: 'code', label: 'Code', icon: 'fa-solid fa-code', desc: 'Code-focused' }
+        ];
+
+        const suggestions = [
+          { title: 'Explain quantum computing', desc: 'Clear overview with analogies', icon: 'fa-solid fa-atom', prompt: 'Explain quantum computing like I am a curious beginner.', mode: 'text' },
+          { title: 'Generate a landscape image', desc: 'Mountain sunrise scene', icon: 'fa-regular fa-image', prompt: 'Create an image of a mountain sunrise over a misty lake.', mode: 'image' },
+          { title: 'Compose a short melody note', desc: 'Ambient audio sample', icon: 'fa-solid fa-music', prompt: 'Generate a calm ambient audio loop description and sample.', mode: 'audio' },
+          { title: 'Write a Vue 3 component', desc: 'Clean code with comments', icon: 'fa-solid fa-code', prompt: 'Write a Vue 3 Composition API counter component with reset.', mode: 'code' }
+        ];
+
+        const activeChat = computed(() => chats.value.find(c => c.id === activeChatId.value) || null);
+        const activeMessages = computed(() => activeChat.value?.messages || []);
+        const canSend = computed(() => input.value.trim().length > 0 || pendingAttachments.value.length > 0);
+        const userInitials = computed(() => {
+          const n = (settings.value.displayName || 'You').trim();
+          return n.split(/\s+/).map(p => p[0]).join('').slice(0, 2).toUpperCase() || 'Y';
+        });
+        const placeholder = computed(() => {
+          const map = {
+            auto: 'Message ModaChat… (text, image, audio, video)',
+            text: 'Ask anything…',
+            image: 'Describe the image you want…',
+            audio: 'Describe the audio or speech…',
+            video: 'Describe the video scene…',
+            code: 'Describe the code you need…'
+          };
+          return map[responseMode.value] || map.auto;
+        });
+        const todayChats = computed(() => chats.value.filter(c => c.updatedAt >= startOfToday()).sort((a,b) => b.updatedAt - a.updatedAt));
+        const olderChats = computed(() => chats.value.filter(c => c.updatedAt < startOfToday()).sort((a,b) => b.updatedAt - a.updatedAt));
+
+        function applyTheme() {
+          document.documentElement.setAttribute('data-theme', theme.value);
+          localStorage.setItem('modachat-theme', theme.value);
+        }
+
+        function toggleTheme() {
+          theme.value = theme.value === 'dark' ? 'light' : 'dark';
+          applyTheme();
+        }
+
+        function loadState() {
+          try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (!raw) {
+              newChat();
+              return;
+            }
+            const data = JSON.parse(raw);
+            if (data.settings) settings.value = { ...defaultSettings, ...data.settings };
+            if (Array.isArray(data.chats) && data.chats.length) {
+              chats.value = data.chats;
+              activeChatId.value = data.activeChatId || data.chats[0].id;
+            } else {
+              newChat();
+            }
+          } catch {
+            newChat();
+          }
+        }
+
+        function saveState() {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            settings: settings.value,
+            chats: chats.value,
+            activeChatId: activeChatId.value
+          }));
+        }
+
+        watch([chats, activeChatId, settings], saveState, { deep: true });
+
+        function showToast(msg) {
+          toast.value = msg;
+          clearTimeout(toastTimer);
+          toastTimer = setTimeout(() => { toast.value = ''; }, 2200);
+        }
+
+        function newChat() {
+          const chat = {
+            id: uid(),
+            title: 'New chat',
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+            messages: []
+          };
+          chats.value.unshift(chat);
+          activeChatId.value = chat.id;
+          input.value = '';
+          pendingAttachments.value = [];
+          if (isMobile.value) sidebarOpen.value = false;
+        }
+
+        function selectChat(id) {
+          activeChatId.value = id;
+          if (isMobile.value) sidebarOpen.value = false;
+          nextTick(scrollToBottom);
+        }
+
+        function deleteChat(id) {
+          const idx = chats.value.findIndex(c => c.id === id);
+          if (idx === -1) return;
+          chats.value.splice(idx, 1);
+          if (activeChatId.value === id) {
+            if (chats.value.length) activeChatId.value = chats.value[0].id;
+            else newChat();
+          }
+          showToast('Chat deleted');
+        }
+
+        function clearActiveChat() {
+          if (!activeChat.value) return;
+          activeChat.value.messages = [];
+          activeChat.value.title = 'New chat';
+          activeChat.value.updatedAt = Date.now();
+          showToast('Conversation cleared');
+        }
+
+        function formatTime(ts) {
+          try {
+            return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          } catch { return ''; }
+        }
+
+        function mediaIcon(type) {
+          return {
+            image: 'fa-regular fa-image',
+            audio: 'fa-solid fa-music',
+            video: 'fa-solid fa-video',
+            file: 'fa-solid fa-file'
+          }[type] || 'fa-solid fa-paperclip';
+        }
+
+        function autoResize() {
+          const el = inputEl.value;
+          if (!el) return;
+          el.style.height = 'auto';
+          el.style.height = Math.min(el.scrollHeight, 180) + 'px';
+        }
+
+        function onKeydown(e) {
+          if (e.key === 'Enter' && !e.shiftKey && settings.value.enterToSend) {
+            e.preventDefault();
+            sendMessage();
+          }
+        }
+
+        function scrollToBottom(force = false) {
+          nextTick(() => {
+            const el = messagesEl.value;
+            if (!el) return;
+            if (force || stickToBottom) {
+              el.scrollTop = el.scrollHeight;
+            }
+          });
+        }
+
+        function onScroll() {
+          const el = messagesEl.value;
+          if (!el) return;
+          stickToBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+        }
+
+        function detectMimeType(file, preferred) {
+          if (preferred && preferred !== 'file') return preferred;
+          if (file.type.startsWith('image/')) return 'image';
+          if (file.type.startsWith('audio/')) return 'audio';
+          if (file.type.startsWith('video/')) return 'video';
+          return 'file';
+        }
+
+        function addFiles(fileList, preferred) {
+          Array.from(fileList || []).forEach(file => {
+            const type = detectMimeType(file, preferred);
+            const url = URL.createObjectURL(file);
+            pendingAttachments.value.push({
+              id: uid(),
+              type,
+              name: file.name,
+              mime: file.type,
+              size: file.size,
+              url,
+              file
+            });
+          });
+        }
+
+        function onFileSelect(e, preferred) {
+          addFiles(e.target.files, preferred);
+          e.target.value = '';
+        }
+
+        function onDrop(e) {
+          isDragging.value = false;
+          addFiles(e.dataTransfer.files, 'file');
+        }
+
+        function removeAttachment(i) {
+          const [removed] = pendingAttachments.value.splice(i, 1);
+          if (removed?.url?.startsWith('blob:')) URL.revokeObjectURL(removed.url);
+        }
+
+        function openLightbox(m) {
+          if (m.type === 'image' || m.type === 'video') lightbox.value = m;
+        }
+
+        function useSuggestion(s) {
+          responseMode.value = s.mode || 'auto';
+          input.value = s.prompt;
+          nextTick(() => {
+            autoResize();
+            sendMessage();
+          });
+        }
+
+        function inferMode(text, attachments) {
+          if (responseMode.value !== 'auto') return responseMode.value;
+          const t = (text || '').toLowerCase();
+          if (attachments.some(a => a.type === 'image') || /image|picture|photo|draw|illustration|generate.*art/.test(t)) return 'image';
+          if (attachments.some(a => a.type === 'audio') || /audio|music|song|podcast|sound|speech|voice/.test(t)) return 'audio';
+          if (attachments.some(a => a.type === 'video') || /video|clip|movie|animation|cinematic/.test(t)) return 'video';
+          if (/code|function|component|script|api|regex|sql|class /.test(t)) return 'code';
+          return 'text';
+        }
+
+        function buildAssistantPayload(userText, attachments, mode) {
+          const personality = settings.value.personality;
+          const model = settings.value.model;
+          const attNote = attachments.length
+            ? `\n\nI received ${attachments.length} attachment(s): ${attachments.map(a => `${a.name} (${a.type})`).join(', ')}.`
+            : '';
+
+          if (mode === 'image') {
+            const img = SAMPLE_IMAGES[Math.floor(Math.random() * SAMPLE_IMAGES.length)];
+            return {
+              text: `Here's a generated image based on your prompt:\n\n**"${userText || 'Visual concept'}"**\n\n_Model: ${model} · Style: photoreal cinematic_`,
+              media: [{ type: 'image', url: img, name: 'generated-image.jpg', caption: userText || 'Generated image' }],
+              mode: 'image'
+            };
+          }
+
+          if (mode === 'audio') {
+            return {
+              text: `I've composed an audio sample matching your request.${attNote}\n\n**Track notes**\n• Tempo: 84 BPM\n• Mood: ambient / calm\n• Instruments: soft pads, gentle piano\n\nPlay the preview below.`,
+              media: [{ type: 'audio', url: SAMPLE_AUDIO, name: 'ambient-loop.mp3', caption: 'Generated ambient audio' }],
+              mode: 'audio'
+            };
+          }
+
+          if (mode === 'video') {
+            return {
+              text: `Here's a short generated video concept for:\n\n> ${userText || 'Your scene'}\n\n**Shot plan**\n1. Wide establishing shot\n2. Slow push-in\n3. Warm color grade\n\nPreview clip attached.`,
+              media: [{ type: 'video', url: SAMPLE_VIDEO, name: 'generated-clip.mp4', caption: 'Generated video preview' }],
+              mode: 'video'
+            };
+          }
+
+          if (mode === 'code') {
+            return {
+              text: `Sure — here's a clean Vue 3 Composition API example:\n\n` +
+`\`\`\`vue
+<script setup>
+import { ref, computed } from 'vue'
+
+const count = ref(0)
+const doubled = computed(() => count.value * 2)
+
+function increment() {
+  count.value++
+}
+function reset() {
+  count.value = 0
+}
+<\/script>
+
+<template>
+  <div class="counter">
+    <p>Count: {{ count }} (×2 = {{ doubled }})</p>
+    <button @click="increment">+1</button>
+    <button @click="reset">Reset</button>
+  </div>
+</template>
+\`\`\`\n\nTips:\n- Keep state in \`ref\` / \`reactive\`\n- Prefer computed for derived values\n- Extract reusable logic into composables`,
+              media: [],
+              mode: 'code'
+            };
+          }
+
+          // text / default multimodal analysis
+          const tips = {
+            helpful: 'I can also generate images, audio, or video — switch modes above or just ask.',
+            concise: 'Ask for image/audio/video anytime.',
+            creative: 'Want a wild visual, soundtrack, or short film next? Just say the word.',
+            technical: 'I can also produce diagrams (image), narrations (audio), or demos (video).'
+          };
+
+          let body = '';
+          if (attachments.length) {
+            body = `Thanks — I've reviewed your multimodal input.${attNote}\n\n**Summary**\n`;
+            attachments.forEach((a, i) => {
+              body += `${i + 1}. **${a.name}** — detected as \`${a.type}\`${a.mime ? ` (${a.mime})` : ''}\n`;
+            });
+            body += `\n**Response**\n`;
+            if (attachments.some(a => a.type === 'image')) {
+              body += `Your image(s) appear suitable for analysis. In a full deployment I would describe objects, text (OCR), colors, and composition. `;
+            }
+            if (attachments.some(a => a.type === 'audio')) {
+              body += `Audio would be transcribed and summarized with timestamps. `;
+            }
+            if (attachments.some(a => a.type === 'video')) {
+              body += `Video would be sampled for keyframes and scene understanding. `;
+            }
+            body += `\n\nRegarding your message:\n\n${userText ? `> ${userText}\n\n` : ''}`;
+            body += `Here's a structured take:\n\n1. **Intent** — Multimodal understanding / generation\n2. **Approach** — Combine signals from text + media\n3. **Next step** — Ask me to generate a matching image, audio track, or video storyboard\n\n_${tips[personality] || tips.helpful}_`;
+          } else {
+            const topic = userText || 'your question';
+            body =
+`**${topic.length > 80 ? topic.slice(0, 80) + '…' : topic}**\n\n` +
+`Here's a thoughtful response from **${model}** (${personality} mode):\n\n` +
+`• **Core idea** — Break the problem into smaller, verifiable parts.\n` +
+`• **Practical step** — Start with a minimal example, then iterate.\n` +
+`• **Watch-out** — Validate assumptions with a quick test or source.\n\n` +
+`If you'd like, I can expand this into a tutorial, generate supporting visuals, or produce sample code.\n\n` +
+`\`\`\`js
+// Quick starter pattern
+function answer(question) {
+  const plan = ["understand", "outline", "deliver"];
+  return plan.map(step => \`✓ \${step}\`).join("\\n");
+}
+console.log(answer(${JSON.stringify(String(userText).slice(0, 40))}));
+\`\`\`\n\n_${tips[personality] || tips.helpful}_`;
+          }
+
+          return { text: body, media: [], mode: 'text' };
+        }
+
+        async function streamText(msgRef, fullText) {
+          if (!settings.value.stream) {
+            msgRef.text = fullText;
+            scrollToBottom();
+            return;
+          }
+          msgRef.text = '';
+          const chars = fullText.split('');
+          let i = 0;
+          return new Promise(resolve => {
+            streamTimer = setInterval(() => {
+              // chunk a few chars at a time for smoother feel
+              const chunk = chars.slice(i, i + 3).join('');
+              msgRef.text += chunk;
+              i += 3;
+              scrollToBottom();
+              if (i >= chars.length) {
+                clearInterval(streamTimer);
+                streamTimer = null;
+                resolve();
+              }
+            }, 12);
+          });
+        }
+
+        function stopStreaming() {
+          if (streamTimer) {
+            clearInterval(streamTimer);
+            streamTimer = null;
+          }
+          isStreaming.value = false;
+          showToast('Stopped');
+        }
+
+        async function sendMessage() {
+          if (!canSend.value || isStreaming.value) return;
+          if (!activeChat.value) newChat();
+
+          const text = input.value.trim();
+          const attachments = [...pendingAttachments.value];
+          const mode = inferMode(text, attachments);
+
+          const userMsg = {
+            id: uid(),
+            role: 'user',
+            text,
+            media: attachments.map(a => ({
+              type: a.type,
+              url: a.url,
+              name: a.name,
+              mime: a.mime,
+              caption: a.name
+            })),
+            createdAt: Date.now()
+          };
+
+          activeChat.value.messages.push(userMsg);
+          activeChat.value.updatedAt = Date.now();
+          if (activeChat.value.title === 'New chat' && text) {
+            activeChat.value.title = text.slice(0, 42) + (text.length > 42 ? '…' : '');
+          } else if (activeChat.value.title === 'New chat' && attachments.length) {
+            activeChat.value.title = attachments[0].name.slice(0, 42);
+          }
+
+          input.value = '';
+          pendingAttachments.value = [];
+          nextTick(autoResize);
+          stickToBottom = true;
+          scrollToBottom(true);
+
+          // Assistant placeholder
+          const assistantMsg = {
+            id: uid(),
+            role: 'assistant',
+            text: '',
+            media: [],
+            mode: null,
+            createdAt: Date.now()
+          };
+          activeChat.value.messages.push(assistantMsg);
+          isStreaming.value = true;
+          scrollToBottom(true);
+
+          // Simulate network latency
+          await new Promise(r => setTimeout(r, 450 + Math.random() * 500));
+          if (!isStreaming.value) return;
+
+          const payload = buildAssistantPayload(text, attachments, mode);
+          assistantMsg.mode = payload.mode;
+          assistantMsg.media = payload.media;
+          await streamText(assistantMsg, payload.text);
+          assistantMsg.createdAt = Date.now();
+          activeChat.value.updatedAt = Date.now();
+          isStreaming.value = false;
+          scrollToBottom(true);
+        }
+
+        async function regenerate(idx) {
+          if (isStreaming.value || !activeChat.value) return;
+          // find preceding user message
+          let userIdx = idx - 1;
+          while (userIdx >= 0 && activeChat.value.messages[userIdx].role !== 'user') userIdx--;
+          if (userIdx < 0) return;
+
+          const userMsg = activeChat.value.messages[userIdx];
+          // remove from user message onward after re-queue? keep user, replace assistant
+          activeChat.value.messages.splice(idx);
+          const mode = userMsg.mode || inferMode(userMsg.text, userMsg.media || []);
+          const assistantMsg = {
+            id: uid(),
+            role: 'assistant',
+            text: '',
+            media: [],
+            mode: null,
+            createdAt: Date.now()
+          };
+          activeChat.value.messages.push(assistantMsg);
+          isStreaming.value = true;
+          scrollToBottom(true);
+          await new Promise(r => setTimeout(r, 400));
+          if (!isStreaming.value) return;
+          const payload = buildAssistantPayload(userMsg.text, userMsg.media || [], responseMode.value === 'auto' ? mode : responseMode.value);
+          assistantMsg.mode = payload.mode;
+          assistantMsg.media = payload.media;
+          await streamText(assistantMsg, payload.text);
+          isStreaming.value = false;
+          activeChat.value.updatedAt = Date.now();
+        }
+
+        function editAndResend(msg, idx) {
+          input.value = msg.text || '';
+          // restore attachments as pending if blob/http urls still valid
+          pendingAttachments.value = (msg.media || []).map(m => ({ ...m, id: uid() }));
+          activeChat.value.messages.splice(idx);
+          nextTick(() => {
+            autoResize();
+            inputEl.value?.focus();
+          });
+        }
+
+        async function copyMessage(msg) {
+          try {
+            await navigator.clipboard.writeText(msg.text || '');
+            showToast('Copied to clipboard');
+          } catch {
+            showToast('Copy failed');
+          }
+        }
+
+        function speakMessage(msg) {
+          if (!msg.text || !window.speechSynthesis) {
+            showToast('Speech not supported');
+            return;
+          }
+          window.speechSynthesis.cancel();
+          const u = new SpeechSynthesisUtterance(msg.text.replace(/```[\s\S]*?```/g, 'code block').replace(/[*_`#>]/g, ''));
+          u.rate = 1;
+          window.speechSynthesis.speak(u);
+          showToast('Reading aloud…');
+        }
+
+        function exportChat() {
+          if (!activeChat.value) return;
+          const data = {
+            title: activeChat.value.title,
+            exportedAt: new Date().toISOString(),
+            model: settings.value.model,
+            messages: activeChat.value.messages.map(m => ({
+              role: m.role,
+              text: m.text,
+              mode: m.mode,
+              media: (m.media || []).map(x => ({ type: x.type, name: x.name, url: x.url?.startsWith('blob:') ? '[local-blob]' : x.url })),
+              createdAt: m.createdAt
+            }))
+          };
+          const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = `${(activeChat.value.title || 'chat').replace(/[^\w\-]+/g, '_').slice(0, 40)}.json`;
+          a.click();
+          URL.revokeObjectURL(a.href);
+          showToast('Chat exported');
+        }
+
+        function saveSettings() {
+          showSettings.value = false;
+          showToast('Settings saved');
+        }
+
+        function resetSettings() {
+          settings.value = { ...defaultSettings };
+          showToast('Settings reset');
+        }
+
+        function toggleRecording() {
+          const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+          if (!SR) {
+            showToast('Speech recognition not supported in this browser');
+            return;
+          }
+          if (isRecording.value && recognition) {
+            recognition.stop();
+            isRecording.value = false;
+            return;
+          }
+          recognition = new SR();
+          recognition.continuous = false;
+          recognition.interimResults = true;
+          recognition.lang = 'en-US';
+          recognition.onresult = (event) => {
+            let transcript = '';
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+              transcript += event.results[i][0].transcript;
+            }
+            input.value = (input.value + ' ' + transcript).trim();
+            autoResize();
+          };
+          recognition.onerror = () => {
+            isRecording.value = false;
+            showToast('Voice input error');
+          };
+          recognition.onend = () => {
+            isRecording.value = false;
+          };
+          recognition.start();
+          isRecording.value = true;
+          showToast('Listening…');
+        }
+
+        function onResize() {
+          isMobile.value = window.innerWidth <= 768;
+          if (!isMobile.value) sidebarOpen.value = true;
+        }
+
+        onMounted(() => {
+          applyTheme();
+          loadState();
+          window.addEventListener('resize', onResize);
+          nextTick(scrollToBottom);
+        });
+
+        onBeforeUnmount(() => {
+          window.removeEventListener('resize', onResize);
+          if (streamTimer) clearInterval(streamTimer);
+          if (toastTimer) clearTimeout(toastTimer);
+          window.speechSynthesis?.cancel();
+        });
+
+        return {
+          theme, settings, chats, activeChatId, input, pendingAttachments, responseMode,
+          isStreaming, showSettings, sidebarOpen, isMobile, toast, lightbox, isDragging,
+          isRecording, messagesEl, inputEl, modes, suggestions, activeMessages, canSend,
+          userInitials, placeholder, todayChats, olderChats,
+          toggleTheme, newChat, selectChat, deleteChat, clearActiveChat, formatTime,
+          mediaIcon, autoResize, onKeydown, onScroll, onFileSelect, onDrop, removeAttachment,
+          openLightbox, useSuggestion, sendMessage, stopStreaming, regenerate, editAndResend,
+          copyMessage, speakMessage, exportChat, saveSettings, resetSettings, toggleRecording,
+          renderMarkdown
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
+
