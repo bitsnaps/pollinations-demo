@@ -3,13 +3,10 @@ import OpenAI from 'openai'
 const GEN_BASE = 'https://gen.pollinations.ai'
 const OPENAI_BASE = `${GEN_BASE}/v1`
 
-const CLIENT_KEY = import.meta.env.VITE_POLLINATIONS_API_KEY || import.meta.env.POLLINATIONS_API_KEY || ''
-const CLIENT_BASE = import.meta.env.VITE_OPENAI_BASE_URL || import.meta.env.OPENAI_BASE_URL || OPENAI_BASE
-
-export function createClient(apiKey) {
+export function createClient(apiKey, baseUrl) {
   return new OpenAI({
-    apiKey: apiKey || CLIENT_KEY || 'anonymous',
-    baseURL: CLIENT_BASE,
+    apiKey: apiKey || 'anonymous',
+    baseURL: baseUrl || OPENAI_BASE,
     dangerouslyAllowBrowser: true,
   })
 }
@@ -24,20 +21,20 @@ export function buildQuery(params = {}) {
   return str ? `?${str}` : ''
 }
 
-export async function listModels(modality, apiKey) {
-  const client = createClient(apiKey)
+export async function listModels(modality, apiKey, baseUrl) {
+  const client = createClient(apiKey, baseUrl)
   const models = await client.models.list()
   const data = models.data || []
   return modality ? data.filter((m) => m.modality === modality) : data
 }
 
-export function chatCompletion({ model = 'openai', messages, ...opts }, apiKey) {
-  const client = createClient(apiKey)
+export function chatCompletion({ model = 'openai', messages, ...opts }, apiKey, baseUrl) {
+  const client = createClient(apiKey, baseUrl)
   return client.chat.completions.create({ model, messages, stream: false, ...opts })
 }
 
-export async function* streamChatCompletion({ model = 'openai', messages, ...opts }, apiKey) {
-  const client = createClient(apiKey)
+export async function* streamChatCompletion({ model = 'openai', messages, ...opts }, apiKey, baseUrl) {
+  const client = createClient(apiKey, baseUrl)
   const stream = await client.chat.completions.create({ model, messages, stream: true, ...opts })
   for await (const chunk of stream) {
     const delta = chunk.choices?.[0]?.delta?.content
@@ -93,8 +90,8 @@ export async function generate3D({ prompt, image, model = 'trellis-2-low' }, api
   return res.blob()
 }
 
-export function createEmbeddings({ input, model = 'openai-3-small', dimensions }, apiKey) {
-  const client = createClient(apiKey)
+export function createEmbeddings({ input, model = 'openai-3-small', dimensions }, apiKey, baseUrl) {
+  const client = createClient(apiKey, baseUrl)
   return client.embeddings.create({ input, model, dimensions })
 }
 

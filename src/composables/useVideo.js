@@ -15,7 +15,7 @@ export function useVideo() {
   async function loadModels() {
     loadingModels.value = true
     try {
-      const all = await listModels(null, settings.activeKey || undefined)
+      const all = await listModels(null, settings.activeKey || undefined, settings.baseUrl || undefined)
       img2imgModels.value = videoImg2ImgModels(all)
       models.value = videoModels(all)
     } catch (e) { error.value = e.message } finally { loadingModels.value = false }
@@ -31,7 +31,7 @@ export function useVideo() {
         aspectRatio: normalizeAspectRatio(aspectRatio),
         audio, seed,
         ...(supportsRefs && refImages?.length ? { image: refImages[0] } : {}),
-      }, settings.activeKey || undefined)
+      }, settings.activeKey || undefined, settings.baseUrl || undefined)
       gallery.value.unshift({ url, prompt, model, createdAt: Date.now() })
       return url
     } catch (e) { error.value = e.message } finally { loading.value = false }

@@ -16,7 +16,7 @@ export function useImage() {
     loadingModels.value = true
     error.value = null
     try {
-      const all = await listModels(null, settings.activeKey || undefined)
+      const all = await listModels(null, settings.activeKey || undefined, settings.baseUrl || undefined)
       editableModels.value = imageToImageModels(all)
       models.value = imageModels(all)
     } catch (e) { error.value = e.message } finally { loadingModels.value = false }
@@ -27,7 +27,7 @@ export function useImage() {
     error.value = null
     const params = normalizeImageParams({ width, height, seed, enhance, nologo, safe, refImages })
     try {
-      const url = await generateImage({ prompt, model, ...params }, settings.activeKey || undefined)
+      const url = await generateImage({ prompt, model, ...params }, settings.activeKey || undefined, settings.baseUrl || undefined)
       gallery.value.unshift({ url, prompt, model, createdAt: Date.now() })
       return url
     } catch (e) { error.value = e.message } finally { loading.value = false }

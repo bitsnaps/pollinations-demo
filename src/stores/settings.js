@@ -15,6 +15,7 @@ export const useSettingsStore = defineStore('settings', {
   state: () => ({
     apiKey: load().apiKey || '',
     byopKey: load().byopKey || '',
+    baseUrl: load().baseUrl || '',
     useProxy: load().useProxy ?? false,
     safe: load().safe ?? true,
     theme: load().theme || 'dark',
@@ -25,6 +26,10 @@ export const useSettingsStore = defineStore('settings', {
   actions: {
     save() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this.$state))
+    },
+    setBaseUrl(url) {
+      this.baseUrl = url
+      this.save()
     },
     setKey(key) {
       if (key.startsWith('pk_')) this.byopKey = key

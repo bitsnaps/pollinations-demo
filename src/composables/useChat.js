@@ -23,7 +23,7 @@ export function useChat() {
     loadingModels.value = true
     error.value = null
     try {
-      const all = await listModels(null, settings.activeKey || undefined)
+      const all = await listModels(null, settings.activeKey || undefined, settings.baseUrl || undefined)
       models.value = sortModels(textModels(all))
     } catch (e) {
       error.value = e.message
@@ -46,7 +46,7 @@ export function useChat() {
         : toApiMessages(conv.messages.slice(0, -1))
       for await (const delta of streamChatCompletion(
         { model: conv.model, messages },
-        settings.activeKey || undefined,
+        settings.activeKey || undefined, settings.baseUrl || undefined,
       )) {
         convs.appendToMessage(assistant.id, delta)
       }

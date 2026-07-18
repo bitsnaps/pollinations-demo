@@ -22,7 +22,7 @@ async function onSubmit() {
       input: input.value,
       model: model.value,
       dimensions: dimensions.value ? parseInt(dimensions.value) : undefined,
-    }, settings.activeKey || undefined)
+    }, settings.activeKey || undefined, settings.baseUrl || undefined)
     result.value = res.data?.[0]?.embedding || res.embedding || []
   } catch (e) { error.value = e.message }
   finally { loading.value = false }

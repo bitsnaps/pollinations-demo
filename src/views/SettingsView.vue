@@ -6,6 +6,7 @@ import { useSettingsStore } from '../stores/settings.js'
 const store = useSettingsStore()
 const apiKey = ref(store.apiKey)
 const byopKey = ref(store.byopKey)
+const baseUrl = ref(store.baseUrl)
 const safe = ref(store.safe)
 const models = ref([])
 const loadingModels = ref(false)
@@ -15,6 +16,7 @@ const maskedKey = computed(() => store.apiKey ? store.apiKey.slice(0, 8) + '...'
 function save() {
   store.apiKey = apiKey.value
   store.byopKey = byopKey.value
+  store.baseUrl = baseUrl.value
   store.safe = safe.value
   store.save()
 }
@@ -22,7 +24,7 @@ function save() {
 async function testKey() {
   loadingModels.value = true
   try {
-    models.value = await listModels(null, store.activeKey || undefined)
+    models.value = await listModels(null, store.activeKey || undefined, store.baseUrl || undefined)
     alert(`Key works! ${models.value.length} models available.`)
   } catch (e) { alert(`Key test failed: ${e.message}`) }
   finally { loadingModels.value = false }
@@ -39,6 +41,9 @@ async function testKey() {
       <div class="settings-card">
         <h3>API Key</h3>
         <p class="help">Current: <code>{{ maskedKey }}</code></p>
+        <b-field label="API Base URL">
+          <b-input v-model="baseUrl" placeholder="https://gen.pollinations.ai/v1" />
+        </b-field>
         <b-field label="Secret Key (sk_…)">
           <b-input v-model="apiKey" type="password" password-reveal placeholder="sk_…" />
         </b-field>

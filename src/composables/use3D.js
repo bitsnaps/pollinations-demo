@@ -13,7 +13,7 @@ export function use3D() {
 
   async function loadModels() {
     loadingModels.value = true
-    try { const all = await listModels(null, settings.activeKey || undefined); models.value = threeModels(all) }
+    try { const all = await listModels(null, settings.activeKey || undefined, settings.baseUrl || undefined); models.value = threeModels(all) }
     catch (e) { error.value = e.message } finally { loadingModels.value = false }
   }
 
@@ -23,7 +23,7 @@ export function use3D() {
     loading.value = true
     try {
       const fmt = normalizeFormat(format)
-      const blob = await generate3D({ prompt, model, image }, settings.activeKey || undefined)
+      const blob = await generate3D({ prompt, model, image }, settings.activeKey || undefined, settings.baseUrl || undefined)
       const url = URL.createObjectURL(blob)
       gallery.value.unshift({ url, model, prompt, format: fmt, createdAt: Date.now() })
       return url

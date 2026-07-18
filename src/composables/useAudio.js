@@ -15,7 +15,7 @@ export function useAudio() {
   async function loadModels() {
     loadingModels.value = true
     try {
-      const all = await listModels(null, settings.activeKey || undefined)
+      const all = await listModels(null, settings.activeKey || undefined, settings.baseUrl || undefined)
       models.value = audioModels(all)
     } catch (e) { error.value = e.message } finally { loadingModels.value = false }
   }
@@ -28,7 +28,7 @@ export function useAudio() {
     loading.value = true
     try {
       const fmt = normalizeFormat(format)
-      const blob = await generateAudio({ text, voice: isMusicModel(model) ? undefined : voice, model }, settings.activeKey || undefined)
+      const blob = await generateAudio({ text, voice: isMusicModel(model) ? undefined : voice, model }, settings.activeKey || undefined, settings.baseUrl || undefined)
       const url = URL.createObjectURL(blob)
       gallery.value.unshift({ url, kind: isMusicModel(model) ? 'music' : 'tts', model, text, createdAt: Date.now() })
       return url
@@ -37,7 +37,7 @@ export function useAudio() {
 
   async function transcribe(blob, filename = 'audio.mp3') {
     loading.value = true
-    try { transcript.value = await transcribeAudio(blob, { filename }, settings.activeKey || undefined) }
+    try { transcript.value = await transcribeAudio(blob, { filename }, settings.activeKey || undefined, settings.baseUrl || undefined) }
     catch (e) { error.value = e.message } finally { loading.value = false }
   }
 
